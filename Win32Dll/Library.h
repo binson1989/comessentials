@@ -1,27 +1,25 @@
 #pragma once
 
-struct IObject
-{
-	virtual void __stdcall AddRef() = 0;
-	virtual void __stdcall Release() = 0;
-	virtual void * __stdcall As(char const * type) = 0;
-};
+#include <Unknwn.h>
 
-struct IHen : IObject
+struct __declspec(uuid("e03ac9b2-ccf6-40a8-b122-e6ab51cace3b")) 
+IHen : IUnknown
 {
 	virtual void __stdcall Cluck() = 0;
 	virtual void __stdcall Roost() = 0;
 };
 
-struct IHen2 : IHen
+struct __declspec(uuid("0480272e-713e-422b-ae48-2f31e10ef8d7")) 
+IHen2 : IHen
 {
 	virtual void __stdcall Forage() = 0;
 };
 
-struct IOfflineChicken : IObject
+struct __declspec(uuid("231f3bfe-b771-47ae-8619-b6c8a032fa43")) 
+IOfflineChicken : IUnknown
 {
 	virtual void __stdcall Load(char const * file) = 0;
 	virtual void __stdcall Save(char const * file) = 0;
 };
 
-IHen * __stdcall CreateHen();
+HRESULT __stdcall CreateHen(IHen **hen);

@@ -1,10 +1,13 @@
 #include "stdafx.h"
 #include "Library.h"
 #include <stdio.h>
+#include <crtdbg.h>
+
+#define ASSERT _ASSERT
 
 struct Hen : IHen2, IOfflineChicken
 {
-	unsigned int m_count;
+	ULONG m_count;
 
 	Hen() : m_count(0)
 	{
@@ -16,38 +19,43 @@ struct Hen : IHen2, IOfflineChicken
 		printf("Chicken soup\n");
 	}
 
-#pragma region IObject
-	void __stdcall AddRef()
+#pragma region IUnknown
+	ULONG __stdcall AddRef()
 	{
-		++m_count;
+		return InterlockedIncrement(&m_count);
 	}
 
-	void __stdcall Release()
+	ULONG __stdcall Release()
 	{
-		if (0 == --m_count)
+		ULONG result = InterlockedDecrement(&m_count);
+		if (0 == result)
 		{
 			delete this;
 		}
+		return result;
 	}
 
-	void * __stdcall As(char const * type)
+	HRESULT __stdcall QueryInterface(IID const &id, void **result)
 	{
-		if (0 == strcmp(type, "IHen") ||
-			0 == strcmp(type, "IHen2") ||
-			0 == strcmp(type, "IObject"))
+		ASSERT(result);
+
+		if (id == __uuidof(IHen2) ||
+			id == __uuidof(IHen) ||
+			id == __uuidof(IUnknown))
 		{
-			AddRef();
-			return static_cast<IHen2 *>(this);
+			*result = static_cast<IHen2 *>(this);
 		}
-		else if (0 == strcmp(type, "IOfflineChicken"))
+		else if (id == __uuidof(IOfflineChicken))
 		{
-			AddRef();
-			return static_cast<IOfflineChicken *>(this);
+			*result = static_cast<IOfflineChicken *>(this);
 		}
 		else
 		{
-			return 0;
+			*result = 0;
+			return E_NOINTERFACE;
 		}
+		static_cast<IUnknown *>(*result)->AddRef();
+		return S_OK;
 	}
 #pragma endregion
 
@@ -83,9 +91,15 @@ struct Hen : IHen2, IOfflineChicken
 #pragma endregion
 };
 
-IHen * __stdcall CreateHen()
+HRESULT __stdcall CreateHen(IHen **result)
 {
-	IHen * hen =  new Hen;
-	hen->AddRef();
-	return hen;
+	ASSERT(result);
+
+	*result = new (std::nothrow) Hen;
+	if (0 == *result)
+	{
+		return E_OUTOFMEMORY;
+	}
+	(*result)->AddRef();
+	return S_OK;
 }
